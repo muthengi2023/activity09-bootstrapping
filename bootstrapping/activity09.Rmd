@@ -108,5 +108,128 @@ x3 is a binary variable and x1 and x2 are uniformly distributed random variables
 ## Traditional MLR model
 First we will fit an estimated model to our simulated data.
 ```{r}
+mlr_fit <- linear_reg() %>%
+  set_mode("regression") %>% 
+  set_engine("lm") %>% 
+  fit(y ~ x1 + x2 + x3, data = sim_dat)
 
+# Also include the confidence intervals for our estimated slope parameters
+tidy(mlr_fit, conf.int = TRUE)
 ```
+The results from fitting the linear model indicate the following:
+
+Intercept (estimate = 1.9421859, std.error = 0.75619115):
+
+The intercept is approximately 1.94, which is close to the true value of 2 specified in the population-level model. The standard error is about 0.76, indicating the variability of this estimate.
+x1 (estimate = 0.3347926, std.error = 0.08911603):
+
+The coefficient for x1 is approximately 0.33, which is slightly higher than the true value of 0.25. The standard error is about 0.089, suggesting a relatively precise estimate.
+x2 (estimate = -0.4953973, std.error = 0.01084670):
+
+The coefficient for x2 is approximately -0.50, which is very close to the true value of -0.5. The standard error is about 0.011, indicating a very precise estimate.
+x3Yes (estimate = 1.8142189, std.error = 0.50919353):
+
+The coefficient for x3 (when x3 is "Yes") is approximately 1.81, which is higher than the true value of 1. The standard error is about 0.51, indicating some variability in this estimate.
+
+Summary of Relationships
+y vs. x1: The fitted coefficient (0.33) is slightly higher than the true value (0.25). This indicates a positive linear relationship between y and x1, aligning with the expected relationship in the true model.
+
+y vs. x2: The fitted coefficient (-0.50) is almost identical to the true value (-0.5). This indicates a negative linear relationship between y and x2, matching the expected relationship in the true model.
+
+y vs. x3: The fitted coefficient (1.81) for x3 when it is "Yes" is higher than the true value (1). This suggests that y increases by approximately 1.81 units when x3 changes from "No" to "Yes". The true model expected an increase of 1 unit, so this relationship is slightly stronger than anticipated.
+
+The visualizations would confirm these relationships by showing:
+
+y vs. x1: A positive linear trend, though some scatter will be present due to the error term.
+y vs. x2: A negative linear trend, with scatter due to the error term.
+y vs. x3: Two distinct clusters, with the "Yes" cluster having higher y values compared to the "No" cluster.
+x1 vs. x2: No discernible pattern, as both are uniformly distributed.
+x1 vs. x3 and x2 vs. x3: No clear relationship, as 
+x3 is binary and x1 and x2 are uniformly distributed.
+
+These observations and the fitted model coefficients confirm the expected relationships specified in the population-level model, with minor variations likely due to random noise.
+
+## Bootstrapping
+Now, bootstrapping treats your sample of data as a psuedo-population that you will create multiple new samples from. Each sample will be of the same size and same number of variables as the original (
+n=20, p=3). However, once a row has been sampled, it will be put back into the “population” (i.e., sampling with replacement). With computing power being relatively cheap now, we can do this for a large number of times to build up B bootstrap samples. For example, we might do B=2,000 bootstrap samples each of n=20
+.
+```{r}
+# Set a random seed value so we can obtain the same "random" results
+set.seed(631)
+
+# Generate the 2000 bootstrap samples
+boot_samps <- sim_dat %>% 
+  bootstraps(times = 2000)
+
+boot_samps
+```
+When viewing this outputted object, it probably looks a little odd. This is a nested data set with two columns:
+
+splits: An rsplit object that has two main components: an analysis dataset and an assessment dataset.
+id: A label of which bootstrap sample it is.
+
+Now we need to fit a linear model to each bootstrap sample. Hopefully, from STA 518, you remember some of the handy iteration functions from {purrr}.
+```{r}
+# Create a function that fits a fixed MLR model to one split dataset
+fit_mlr_boots <- function(split) {
+  lm(y ~ x1 + x2 + x3, data = analysis(split))
+}
+
+# Fit the model to each split and store the information
+# Also, obtain the tidy model information
+boot_models <- boot_samps %>% 
+  mutate(
+    model = map(splits, fit_mlr_boots),
+    coef_info = map(model, tidy)
+    )
+
+boots_coefs <- boot_models %>% 
+  unnest(coef_info)
+
+boots_coefs
+```
+We can then calculate the bootstrap intervals by obtaining the 2.5th and 97.5th percentiles - similar to a 95% confidence interval as we are finding the values that contain the middle 95% of the bootstrap values. Note that we provide the level of significance (1 - confidence level): alpha=0.05 = 1-0.95
+
+```{r}
+boot_int <- int_pctl(boot_models, statistics = coef_info, alpha = 0.05)
+boot_int
+```
+visualize this information to get a sense of the variability of my estimates.
+```{r}
+ggplot(boots_coefs, aes(x = estimate)) +
+  geom_histogram(bins = 30) +
+  facet_wrap( ~ term, scales = "free") +
+  geom_vline(data = boot_int, aes(xintercept = .lower), col = "blue") +
+  geom_vline(data = boot_int, aes(xintercept = .upper), col = "blue")
+```
+
+
+To assess the accuracy of the fitted model compared to the population-level model, we can compare the confidence intervals for each coefficient with the true values from the population-level model. 
+
+Population-Level Model Coefficients
+Intercept: b0=2
+x1: b1=0.25
+x2: b2=−0.5
+x3: b3=1
+
+Fitted Model Results and Confidence Intervals
+Intercept:
+Estimate: 1.9328480
+95% Confidence Interval: [0.1756609, 1.9328480]
+x1:
+Estimate: 0.3399160
+95% Confidence Interval: [0.1896967, 0.3399160]
+x2:
+Estimate: -0.4950271
+95% Confidence Interval: [-0.5162847, -0.4950271]
+x3:
+Estimate: 1.8262014
+95% Confidence Interval: [0.8921258, 1.8262014]
+
+The accuracy of the model coefficients can be summarized as follows:
+
+The intercept estimate (1.9328480) is close to the true value (2) but not within the 95% CI, indicating slight inaccuracy.
+The estimate for x1 (0.3399160) is close to the true value (0.25) and within the 95% CI, indicating good accuracy.
+The estimate for x2 (-0.4950271) is very close to the true value (-0.5) and within the 95% CI, indicating high accuracy.
+The estimate for x3 (1.8262014) is higher than the true value (1) but not within the 95% CI, indicating some inaccuracy.
+These conclusions were made by comparing the true population-level coefficients with the estimated coefficients and their respective confidence intervals from the fitted model. This approach allows us to evaluate how well the model estimates match the true values and assess the precision of these estimates.
