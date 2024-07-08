@@ -10,8 +10,103 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(tidyverse)
 library(tidymodels)
+library(tibble)
+library(dplyr)
+library(ggplot2)
+library(GGally)
 ```
 ## Create the data
+To help conceptualize bootstrapping to traditional methods that we explore earlier this semester, we will create our own dataset. This way, we will know the truth about the population from which we are drawing data and can compare how bootstrapping and the traditional methods compare (and are different).
+```{r}
+# Set a random seed value so we can obtain the same "random" results
+set.seed(2023)
+
+# Create a data frame/tibble named sim_dat
+sim_dat <- tibble(
+#  creates a vector named x1 containing 20 random numbers, each between -5 (min) and 5(max).
+  x1 = runif(20, -5, 5),
+#  creates a vector named x2 containing 20 random numbers, each between 0 (min) and 100(max).
+  x2 = runif(20, 0, 100),
+# creates a vector named x3 containing 20 random numbers, each of which is either 0 or 1, with a 50% probability for each outcome. This essentially generates 20 random Bernoulli trials with equal probability for success (1) and failure (0)
+  x3 = rbinom(20, 1, 0.5)
+  )
+
+b0 <- 2
+b1 <- 0.25
+b2 <- -0.5
+b3 <- 1
+sigma <- 1.5
+
+errors <- rnorm(20, 0, sigma)
+
+sim_dat <- sim_dat %>% 
+  mutate(
+    y = b0 + b1*x1 + b2*x2 + b3*x3 + errors,
+    x3 = case_when(
+      x3 == 0 ~ "No",
+      TRUE ~ "Yes"
+      )
+    )
+```
+What is the true (population-level) model? Note that we are adding noise/variability, but based on the above code you can see what the “baseline” model is.
+
+y=2+0.25⋅x1−0.5⋅x2+1⋅x3
+
+Create graphical visualizations for the relationship between all variable pairs (i.e., y and each x and also each x pair). 
+
+Provide a brief summary of what you see/notice. That is, how do these relationships compare with your comments from (1) and model in (2)? Especially for the relationship between y and each x. 
+
+```{r, message=FALSE}
+# Set a random seed for reproducibility
+set.seed(2023)
+
+# Create the data frame/tibble named sim_dat
+sim_dat <- tibble(
+  x1 = runif(20, -5, 5),
+  x2 = runif(20, 0, 100),
+  x3 = rbinom(20, 1, 0.5)
+)
+
+# Define the coefficients and error standard deviation
+b0 <- 2
+b1 <- 0.25
+b2 <- -0.5
+b3 <- 1
+sigma <- 1.5
+
+# Generate errors
+errors <- rnorm(20, 0, sigma)
+
+# Create the dependent variable y and transform x3
+sim_dat <- sim_dat %>%
+  mutate(
+    y = b0 + b1 * x1 + b2 * x2 + b3 * x3 + errors,
+    x3 = case_when(
+      x3 == 0 ~ "No",
+      TRUE ~ "Yes"
+    )
+  )
+
+# Create the pairs plot using ggpairs
+ggpairs(sim_dat)
+
+```
+This code will produce a pairs plot matrix for all variable pairs in the sim_dat dataset. Here’s a brief summary of what you might see:
+
+y vs. x1: Given the true model 
+
+y=2+0.25⋅x1−0.5⋅x2+1⋅x3+error, you should see a positive linear relationship between 
+y vs. x2: You should observe a negative linear relationship between x2, again with some scatter due to the error term.
+
+y vs. x3: Since x3 is a binary variable, you should see two clusters of points corresponding to x3=0 ("No") and x3=1 ("Yes"). The cluster for x3=1 should be shifted upward by approximately 1 unit on the y-axis compared to the cluster for x3=0.
+
+x1 vs. x2: Since x1 and x2 are both uniformly distributed random variables, there should be no clear relationship or pattern between these two variables.
+
+x1 vs. x3 and x2 vs. x3: Similarly, there should be no clear relationship between x1 or x2 and x3 as 
+x3 is a binary variable and x1 and x2 are uniformly distributed random variables.
+
+## Traditional MLR model
+First we will fit an estimated model to our simulated data.
 ```{r}
 
 ```
