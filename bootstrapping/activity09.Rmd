@@ -6,3 +6,12 @@ output: github_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+## Load the necessary packages
+```{r}
+library(tidyverse)
+library(tidymodels)
+```
+## Create the data
+```{r}
+
+```
