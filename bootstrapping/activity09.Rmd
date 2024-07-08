@@ -233,3 +233,77 @@ The estimate for x1 (0.3399160) is close to the true value (0.25) and within the
 The estimate for x2 (-0.4950271) is very close to the true value (-0.5) and within the 95% CI, indicating high accuracy.
 The estimate for x3 (1.8262014) is higher than the true value (1) but not within the 95% CI, indicating some inaccuracy.
 These conclusions were made by comparing the true population-level coefficients with the estimated coefficients and their respective confidence intervals from the fitted model. This approach allows us to evaluate how well the model estimates match the true values and assess the precision of these estimates.
+
+## Challenge
+
+Add a pair of vertical orange lines that correspond to the traditional method’s 95% confidence intervals
+A single vertical blue line that corresponds to the population slope value (there should be a unique blue line in each plot)
+```{r}
+
+# Set a random seed for reproducibility
+set.seed(2023)
+
+# Create the data frame/tibble named sim_dat
+sim_dat <- tibble(
+  x1 = runif(20, -5, 5),
+  x2 = runif(20, 0, 100),
+  x3 = rbinom(20, 1, 0.5)
+)
+
+# Define the coefficients and error standard deviation
+b0 <- 2
+b1 <- 0.25
+b2 <- -0.5
+b3 <- 1
+sigma <- 1.5
+
+# Generate errors
+errors <- rnorm(20, 0, sigma)
+
+# Create the dependent variable y and transform x3
+sim_dat <- sim_dat %>%
+  mutate(
+    y = b0 + b1 * x1 + b2 * x2 + b3 * x3 + errors,
+    x3 = case_when(
+      x3 == 0 ~ "No",
+      TRUE ~ "Yes"
+    )
+  )
+
+# Fit a linear model
+model <- lm(y ~ x1 + x2 + x3, data = sim_dat)
+summary(model)
+
+# Extract coefficients and confidence intervals
+coef_df <- data.frame(
+  term = names(coef(model)),
+  estimate = coef(model),
+  lower = confint(model)[, 1],
+  upper = confint(model)[, 2]
+)
+
+# Define true values
+true_values <- data.frame(
+  term = c("(Intercept)", "x1", "x2", "x3Yes"),
+  value = c(b0, b1, b2, b3)
+)
+
+# Plotting the coefficients with confidence intervals and true values
+ggplot(coef_df, aes(x = term, y = estimate)) +
+  geom_point(size = 3, color = "red") +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2, color = "orange") +
+  geom_vline(data = true_values, aes(xintercept = term, yintercept = value), color = "blue", linetype = "dashed") +
+  labs(title = "Estimated Coefficients with Confidence Intervals",
+       x = "Term",
+       y = "Estimate") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12)) +
+  scale_color_manual(values = c("red", "orange", "blue")) +
+  scale_fill_manual(values = c("red", "orange", "blue"))
+
+
+
+```
+Adding a line to show 
