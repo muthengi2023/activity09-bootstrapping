@@ -54,8 +54,6 @@ y=2+0.25⋅x1−0.5⋅x2+1⋅x3
 
 Create graphical visualizations for the relationship between all variable pairs (i.e., y and each x and also each x pair). 
 
-Provide a brief summary of what you see/notice. That is, how do these relationships compare with your comments from (1) and model in (2)? Especially for the relationship between y and each x. 
-
 ```{r, message=FALSE}
 # Set a random seed for reproducibility
 set.seed(2023)
@@ -91,7 +89,11 @@ sim_dat <- sim_dat %>%
 ggpairs(sim_dat)
 
 ```
-This code will produce a pairs plot matrix for all variable pairs in the sim_dat dataset. Here’s a brief summary of what you might see:
+Provide a brief summary of what you see/notice. That is, how do these relationships compare with your comments from (1) and model in (2)? Especially for the relationship between y and each x. 
+
+This code will produce a pairs plot matrix for all variable pairs in the sim_dat dataset. 
+
+brief summary:
 
 y vs. x1: Given the true model 
 
@@ -194,6 +196,8 @@ We can then calculate the bootstrap intervals by obtaining the 2.5th and 97.5th 
 boot_int <- int_pctl(boot_models, statistics = coef_info, alpha = 0.05)
 boot_int
 ```
+
+## Vizualization
 visualize this information to get a sense of the variability of my estimates.
 ```{r}
 ggplot(boots_coefs, aes(x = estimate)) +
@@ -229,9 +233,13 @@ Estimate: 1.8262014
 The accuracy of the model coefficients can be summarized as follows:
 
 The intercept estimate (1.9328480) is close to the true value (2) but not within the 95% CI, indicating slight inaccuracy.
+
 The estimate for x1 (0.3399160) is close to the true value (0.25) and within the 95% CI, indicating good accuracy.
+
 The estimate for x2 (-0.4950271) is very close to the true value (-0.5) and within the 95% CI, indicating high accuracy.
+
 The estimate for x3 (1.8262014) is higher than the true value (1) but not within the 95% CI, indicating some inaccuracy.
+
 These conclusions were made by comparing the true population-level coefficients with the estimated coefficients and their respective confidence intervals from the fitted model. This approach allows us to evaluate how well the model estimates match the true values and assess the precision of these estimates.
 
 ## Challenge
@@ -306,4 +314,3 @@ ggplot(coef_df, aes(x = term, y = estimate)) +
 
 
 ```
-Adding a line to show 
